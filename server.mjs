@@ -47,8 +47,8 @@ mcpServer.registerTool(
       end_date: z.string().describe('End date to filter/order by (e.g., YYYY-MM-DD or ISO-8601).'),
     },
   },
-  async ({ date }) => {
-    const data = await orderList({ date });
+  async ({ start_date, end_date }) => {
+    const data = await orderList({ start_date, end_date });
     return {
       content: [
         {
@@ -66,7 +66,8 @@ async function main() {
   console.error('MCP server "amarpet-order-list" running on stdio');
 }
 
-main().catch((error) => {
+main()
+.catch((error) => {
   console.error('Server error:', error);
   process.exit(1);
 });
