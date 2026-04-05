@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as z from 'zod/v4';
 
-const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const baseUrl = process.env.BASE_URL || 'https://admin.amarpet.com/api/v1';
 const ORDER_LIST_URL = `${baseUrl}/test/orders-by-date`;
 function buildHeaders() {
   const headers = {
