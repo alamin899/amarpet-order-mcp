@@ -23,7 +23,7 @@ Env:
 - **`HOST`** — bind address (default **`0.0.0.0`**).
 - **`MCP_PATH`** — MCP route (default **`/mcp`**).
 - **`API_KEY`** — if set, sent as **`x-api-key`** on upstream Amarpet requests.
-- **`ALLOWED_HOST`** — optional extra **Host** allowed by the MCP app when **`HOST`** is **`0.0.0.0`** (e.g. your public domain behind a reverse proxy).
+- **`ALLOWED_HOSTS`** (or legacy **`ALLOWED_HOST`**) — comma-separated hostnames/IPs allowed in the **`Host`** header when **`HOST`** is **`0.0.0.0`**. Include the **same** host you use in the MCP URL (e.g. **`165.232.154.13`** or your domain). If this does not match, Cursor gets **403** and the MCP may look “broken.”
 
 ## Docker
 
@@ -52,6 +52,8 @@ docker run --rm -p 3000:3000 --env-file .env amarpet-order-mcp
 
 ### Cursor MCP (HTTP)
 
+**Remote URL (e.g. `http://165.232.154.13:3000/mcp`):** use **Connect** to start the session. This server does **not** implement OAuth or bearer auth on `/mcp` — you can **ignore** any **Authenticate** / OAuth prompt; Cursor sometimes shows it for all remote HTTP MCPs.
+
 1. Copy the example and point **`url`** at your server (local or deployed): **`http://<host>:<port><MCP_PATH>`** (defaults: **`http://127.0.0.1:3000/mcp`**).
 
    ```bash
@@ -62,7 +64,7 @@ docker run --rm -p 3000:3000 --env-file .env amarpet-order-mcp
 
 3. Restart Cursor after changing MCP configuration.
 
-For a **remote** deployment, use **`https://your-domain/mcp`** (or your VM’s URL) and ensure **`ALLOWED_HOST`** matches the **Host** header your proxy sends.
+For a **remote** deployment, set **`ALLOWED_HOSTS`** to your VM **public IP** and/or **domain** (same value clients put in the URL). If you use GitHub Actions deploy, **`ALLOWED_HOSTS`** defaults to **`VM_PUBLIC_IP`** when unset.
 
 ## Tool: `get_orders`
 

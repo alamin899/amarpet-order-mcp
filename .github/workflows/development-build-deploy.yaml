@@ -3,6 +3,7 @@
 #   BASE_URL, DOCKER_CONTAINER_REGISTRY, DOCKER_REPOSITORY_NAME, DOCKER_USERNAME,
 #   VM_PUBLIC_IP, VM_USERNAME, SSH_PORT
 # Optional: MCP_HOST_PORT (host port to map to container 3000; default 3000)
+# Optional: ALLOWED_HOSTS (comma-separated Host allowlist; defaults to VM_PUBLIC_IP if unset)
 # Required secrets:
 #   DOCKER_PASSWORD, SSH_KEY, API_KEY  (upstream Amarpet API key — same as server.mjs API_KEY)
 
@@ -64,4 +65,5 @@ jobs:
               -p ${{ vars.MCP_HOST_PORT || '3000' }}:3000 \
               -e BASE_URL='${{ vars.BASE_URL }}' \
               -e API_KEY='${{ secrets.API_KEY }}' \
+              -e ALLOWED_HOSTS='${{ vars.ALLOWED_HOSTS || vars.VM_PUBLIC_IP }}' \
               ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest

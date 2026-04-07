@@ -13,6 +13,15 @@ const API_KEY = process.env.API_KEY || '';
 
 const ORDER_LIST_URL = `${BASE_URL}/test/orders-by-date`;
 
+/** Hostnames allowed in the `Host` header when binding to 0.0.0.0 (DNS rebinding). Comma-separated; include the public IP or domain clients use in the MCP URL. */
+function parseAllowedHosts() {
+  const raw = process.env.ALLOWED_HOSTS || process.env.ALLOWED_HOST || '';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 function buildHeaders() {
   const headers = {
     accept: 'application/json',
@@ -133,8 +142,10 @@ async function main() {
         ? [
             'localhost',
             '127.0.0.1',
-            process.env.ALLOWED_HOST || '',
-          ].filter(Boolean)
+            '165.232.154.13',
+            '[::1]',
+            ...parseAllowedHosts(),
+          ]
         : undefined,
   });
 
