@@ -21,7 +21,7 @@ jobs:
           sed -i '/API_KEY/d' .env
 
           echo 'BASE_URL="${{ vars.BASE_URL }}"' >> .env
-          echo 'APP_KEY="${{ secrets.APP_KEY }}"' >> .env
+          echo 'API_KEY="${{ secrets.API_KEY }}"' >> .env
         shell: bas
 
       - name: Set up Docker Build
