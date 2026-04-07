@@ -1,0 +1,58 @@
+name: Apn063 - Body Temperature Monitor build and deploy for development environment
+
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    name: Development build process
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Set up Actions
+        uses: actions/checkout@v3
+
+      - name: Create environment file and update variable from variable and secrets
+        run: |
+          cp .env.example .env
+        
+          sed -i '/BASE_URL/d' .env
+          sed -i '/API_KEY/d' .env
+
+          echo 'BASE_URL="${{ vars.BASE_URL }}"' >> .env
+          echo 'APP_KEY="${{ secrets.APP_KEY }}"' >> .env
+        shell: bas
+
+      - name: Set up Docker Build
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Digital Ocean Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.DOCKER_CONTAINER_REGISTRY }}
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        if: ${{ success() }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest
+
+      - name: Deploy to VM via SSH
+        if: ${{ success() }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ vars.VM_PUBLIC_IP }}
+          username: ${{ vars.VM_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ vars.SSH_PORT }}
+          script: |
+            docker login ${{ vars.DOCKER_CONTAINER_REGISTRY }} -u ${{ vars.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+            docker pull ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest
+            docker rm -f ${{ vars.DOCKER_REPOSITORY_NAME }} || true
+            docker run -d --name ${{ vars.DOCKER_REPOSITORY_NAME }} --restart unless-stopped -p ${{ vars.HOST_PORT }}:${{ vars.CONTAINER_RUNNING_PORT }} ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest
