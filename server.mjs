@@ -108,6 +108,7 @@ function createServer() {
     },
     async ({ start_date, end_date }) => {
       const data = await orderList({ start_date, end_date });
+      console.error(`[mcp] ${new Date().toISOString()} ${"Mcp request successful"}`);
 
       return {
         content: [
