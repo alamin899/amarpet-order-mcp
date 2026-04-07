@@ -2,8 +2,9 @@
 # Required GitHub Environment "development" variables:
 #   BASE_URL, DOCKER_CONTAINER_REGISTRY, DOCKER_REPOSITORY_NAME, DOCKER_USERNAME,
 #   VM_PUBLIC_IP, VM_USERNAME, SSH_PORT
+# Optional: MCP_HOST_PORT (host port to map to container 3000; default 3000)
 # Required secrets:
-#   DOCKER_PASSWORD, SSH_KEY, API_KEYS
+#   DOCKER_PASSWORD, SSH_KEY, API_KEY  (upstream Amarpet API key — same as server.mjs API_KEY)
 
 name: Amarpet order MCP — development build and deploy
 
@@ -42,6 +43,8 @@ jobs:
           file: Dockerfile
           push: true
           tags: ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy on VM via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -58,6 +61,7 @@ jobs:
             docker run -d \
               --name ${{ vars.DOCKER_REPOSITORY_NAME }} \
               --restart unless-stopped \
+              -p ${{ vars.MCP_HOST_PORT || '3000' }}:3000 \
               -e BASE_URL='${{ vars.BASE_URL }}' \
-              -e API_KEYS='${{ secrets.API_KEY }}' \
+              -e API_KEY='${{ secrets.API_KEY }}' \
               ${{ vars.DOCKER_CONTAINER_REGISTRY }}/${{ vars.DOCKER_REPOSITORY_NAME }}:latest

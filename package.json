@@ -1,17 +1,17 @@
 {
-  "name": "amarpet-product-list-mcp",
-  "version": "1.0.0",
-  "description": "",
+  "name": "amarpet-order-list-mcp",
+  "version": "1.1.0",
+  "type": "module",
   "main": "server.mjs",
   "scripts": {
-    "start": "node server.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.28.0",
-    "dotenv": "^17.4.0"
+    "@cfworker/json-schema": "^4.1.1",
+    "@modelcontextprotocol/express": "latest",
+    "@modelcontextprotocol/node": "latest",
+    "@modelcontextprotocol/server": "latest",
+    "dotenv": "^16.4.5",
+    "zod": "^4.0.0"
   }
 }

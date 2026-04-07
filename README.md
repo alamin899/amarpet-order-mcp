@@ -19,11 +19,15 @@ npm start
 Env:
 
 - **`BASE_URL`** — API base (see above).
-- **`API_KEYS`** or **`API_KEY`** — sent as **`X-API-Key`** (override with **`API_KEY_HEADER`**).
+- **`PORT`** — HTTP listen port (default **`3000`**).
+- **`HOST`** — bind address (default **`0.0.0.0`**).
+- **`MCP_PATH`** — MCP route (default **`/mcp`**).
+- **`API_KEY`** — if set, sent as **`x-api-key`** on upstream Amarpet requests.
+- **`ALLOWED_HOST`** — optional extra **Host** allowed by the MCP app when **`HOST`** is **`0.0.0.0`** (e.g. your public domain behind a reverse proxy).
 
 ## Docker
 
-This app speaks **MCP over stdio** (stdin/stdout). It does **not** open an HTTP port.
+The server exposes **MCP over HTTP** (streamable HTTP transport) on **`PORT`**.
 
 ### Build
 
@@ -31,53 +35,34 @@ This app speaks **MCP over stdio** (stdin/stdout). It does **not** open an HTTP 
 docker build -t amarpet-order-mcp .
 ```
 
-### Run (interactive — required for MCP)
+### Run (publish port)
 
 ```bash
-docker run --rm -i \
+docker run --rm -p 3000:3000 \
   -e BASE_URL=https://admin.amarpet.com/api/v1 \
-  -e API_KEYS=your-api-key \
+  -e API_KEY=your-amarpet-api-key \
   amarpet-order-mcp
 ```
 
 Or with an env file:
 
 ```bash
-docker run --rm -i --env-file .env amarpet-order-mcp
+docker run --rm -p 3000:3000 --env-file .env amarpet-order-mcp
 ```
 
-Always use **`-i`** (interactive stdin). Without it, MCP clients cannot talk to the process.
+### Cursor MCP (HTTP)
 
-### Docker Compose
+1. Copy the example and point **`url`** at your server (local or deployed): **`http://<host>:<port><MCP_PATH>`** (defaults: **`http://127.0.0.1:3000/mcp`**).
 
-```bash
-cp .env.example .env
-# edit .env
-docker compose run --rm -i mcp
-```
+   ```bash
+   cp .cursor/mcp.json.example .cursor/mcp.json
+   ```
 
-### Cursor MCP (example)
+2. Merge the **`mcpServers`** block into Cursor’s MCP settings if you use global config (**`~/.cursor/mcp.json`**) instead of the project file.
 
-Point the MCP server at Docker with stdio:
+3. Restart Cursor after changing MCP configuration.
 
-```json
-{
-  "mcpServers": {
-    "amarpet-orders": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "--env-file", "/absolute/path/to/.env",
-        "amarpet-order-mcp:latest"
-      ]
-    }
-  }
-}
-```
-
-### VM / `docker run -d`
-
-A **detached** container has **no attached stdin**; Cursor (and typical MCP hosts) **cannot** use it over stdio. Detached runs are only useful if you add an **HTTP/SSE** MCP transport later, or for keeping a pulled image on the server. Prefer **`docker compose run --rm -i`** or **`docker run --rm -i`** on the machine where the MCP client runs.
+For a **remote** deployment, use **`https://your-domain/mcp`** (or your VM’s URL) and ensure **`ALLOWED_HOST`** matches the **Host** header your proxy sends.
 
 ## Tool: `get_orders`
 
