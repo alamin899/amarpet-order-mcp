@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"my-mcp-server-c5125a8d": {
+			"url": "http://165.232.154.13:3000/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}
