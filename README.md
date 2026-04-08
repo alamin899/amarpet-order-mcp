@@ -66,6 +66,12 @@ docker run --rm -p 3000:3000 --env-file .env amarpet-order-mcp
 
 For a **remote** deployment, set **`ALLOWED_HOSTS`** to your VM **public IP** and/or **domain** (same value clients put in the URL). If you use GitHub Actions deploy, **`ALLOWED_HOSTS`** defaults to **`VM_PUBLIC_IP`** when unset.
 
+### OpenAI Responses API (`tools[].type: "mcp"`)
+
+OpenAI’s servers must reach your **`server_url` over the public internet** (not `192.168.x.x`). Open port **3000** (or your mapped port) on the VM firewall.
+
+If you see **`424 Failed Dependency`** / **`Error retrieving tool list`**, it was often because Streamable HTTP requires **`Accept: application/json, text/event-stream`** on POST; this server **normalizes** that header for `/mcp` so OpenAI’s connector can list tools. Redeploy/restart after pulling the fix.
+
 ## Tool: `get_orders`
 
 - **`start_date`** — e.g. `YYYY-MM-DD`

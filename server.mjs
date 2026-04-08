@@ -135,6 +135,29 @@ function getMcpSessionHeader(req) {
   return undefined;
 }
 
+/**
+ * Streamable HTTP requires POST clients to accept both JSON and SSE. Some clients
+ * (e.g. OpenAI Responses API MCP connector) omit `text/event-stream`, which yields
+ * 406 and appears as 424 Failed Dependency upstream.
+ */
+function normalizeMcpAcceptHeaders(req, _res, next) {
+  if (req.method === 'POST') {
+    const a = String(req.headers.accept ?? '').toLowerCase();
+    if (!a.includes('application/json') || !a.includes('text/event-stream')) {
+      req.headers.accept = 'application/json, text/event-stream';
+    }
+  }
+  if (req.method === 'GET') {
+    const a = String(req.headers.accept ?? '').toLowerCase();
+    if (!a.includes('text/event-stream')) {
+      req.headers.accept = req.headers.accept
+        ? `${req.headers.accept}, text/event-stream`
+        : 'text/event-stream';
+    }
+  }
+  next();
+}
+
 async function main() {
   const app = createMcpExpressApp({
     host: HOST,
@@ -143,7 +166,6 @@ async function main() {
         ? [
             'localhost',
             '127.0.0.1',
-            '165.232.154.13',
             '[::1]',
             ...parseAllowedHosts(),
           ]
@@ -158,6 +180,8 @@ async function main() {
       version: '1.1.0',
     });
   });
+
+  app.use(MCP_PATH, normalizeMcpAcceptHeaders);
 
   // MCP endpoint — streamable HTTP is stateful: reuse server+transport per mcp-session-id.
   app.all(MCP_PATH, async (req, res) => {
