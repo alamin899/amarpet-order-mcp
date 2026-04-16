@@ -10,7 +10,48 @@ const PORT   = Number(process.env.PORT   || 3000);
 const HOST   = process.env.HOST          || '0.0.0.0';
 const BASE_URL = process.env.BASE_URL    || 'https://admin.amarpet.com/api/v1';
 const MCP_PATH = process.env.MCP_PATH   || '/mcp';
-const API_KEY  = process.env.API_KEY    || '';
+/**
+ * Upstream Amarpet API key(s) used when the MCP tool calls the upstream API.
+ * Supports:
+ *  - single string:      API_KEY=abc
+ *  - comma-separated:    API_KEY=abc,def
+ *  - JSON array string:  API_KEY='["abc","def"]'
+ */
+function parseApiKeys(raw) {
+  if (!raw) return [];
+  const s = String(raw).trim();
+  if (!s) return [];
+
+  // Try JSON array first.
+  if (s.startsWith('[') && s.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        return parsed.map((v) => String(v).trim()).filter(Boolean);
+      }
+    } catch {
+      // fall through to comma-separated / single value
+    }
+  }
+
+  // Comma-separated fallback.
+  if (s.includes(',')) {
+    return s.split(',').map((v) => v.trim()).filter(Boolean);
+  }
+
+  // Single key.
+  return [s];
+}
+
+const UPSTREAM_API_KEYS = parseApiKeys(process.env.API_KEY || '');
+let upstreamApiKeyIndex = 0;
+
+function getNextUpstreamApiKey() {
+  if (UPSTREAM_API_KEYS.length === 0) return '';
+  const key = UPSTREAM_API_KEYS[upstreamApiKeyIndex % UPSTREAM_API_KEYS.length];
+  upstreamApiKeyIndex = (upstreamApiKeyIndex + 1);
+  return key;
+}
 
 const ORDER_LIST_URL = `${BASE_URL}/test/orders-by-date`;
 
@@ -18,7 +59,8 @@ const ORDER_LIST_URL = `${BASE_URL}/test/orders-by-date`;
 
 function buildHeaders() {
   const h = { accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
-  if (API_KEY) h['x-api-key'] = API_KEY;
+  const apiKey = getNextUpstreamApiKey();
+  if (apiKey) h['x-api-key'] = apiKey;
   return h;
 }
 

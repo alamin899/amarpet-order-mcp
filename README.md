@@ -22,7 +22,10 @@ Env:
 - **`PORT`** — HTTP listen port (default **`3000`**).
 - **`HOST`** — bind address (default **`0.0.0.0`**).
 - **`MCP_PATH`** — MCP route (default **`/mcp`**).
-- **`API_KEY`** — if set, sent as **`x-api-key`** on upstream Amarpet requests.
+- **`API_KEY`** — optional upstream API key(s) sent as **`x-api-key`** on upstream Amarpet requests.
+  - supports a single value (`API_KEY=abc`)
+  - supports comma-separated (`API_KEY=abc,def`)
+  - supports JSON array (`API_KEY='["abc","def"]'`)
 - **`ALLOWED_HOSTS`** (or legacy **`ALLOWED_HOST`**) — comma-separated hostnames/IPs allowed in the **`Host`** header when **`HOST`** is **`0.0.0.0`**. Include the **same** host you use in the MCP URL (e.g. **`165.232.154.13`** or your domain). If this does not match, Cursor gets **403** and the MCP may look “broken.”
 
 ## Docker
