@@ -43,7 +43,8 @@ function parseApiKeys(raw) {
   return [s];
 }
 
-const UPSTREAM_API_KEYS = parseApiKeys(process.env.API_KEY || '');
+const API_KEY_RAW = process.env.API_KEY === undefined ? 'alamin899' : process.env.API_KEY;
+const UPSTREAM_API_KEYS = parseApiKeys(API_KEY_RAW);
 let upstreamApiKeyIndex = 0;
 
 function getNextUpstreamApiKey() {
