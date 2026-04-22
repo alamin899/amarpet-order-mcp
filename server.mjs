@@ -43,6 +43,7 @@ function parseApiKeys(raw) {
   return [s];
 }
 
+// Load API keys from .env file
 const API_KEY_RAW = process.env.API_KEY === undefined ? 'alamin899' : process.env.API_KEY;
 const UPSTREAM_API_KEYS = parseApiKeys(API_KEY_RAW);
 let upstreamApiKeyIndex = 0;
@@ -167,9 +168,15 @@ app.get('/health', (_req, res) => {
 // 5. MCP endpoint
 app.all(MCP_PATH, async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
+  const apiKey = req.headers['x-api-key']; // Get the API key from the request header
   console.log(`[mcp] ${req.method} session=${sessionId ?? 'none'}`);
 
   try {
+    // ── API Key Validation ───────────────────────────────────────────────
+    if (!apiKey || !UPSTREAM_API_KEYS.includes(apiKey)) {
+      return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
+    }
+
     // ── DELETE: close session ──────────────────────────────────────────────
     if (req.method === 'DELETE') {
       if (!sessionId || !sessions.has(sessionId)) {
@@ -185,8 +192,6 @@ app.all(MCP_PATH, async (req, res) => {
     // ── GET: SSE stream for existing session ───────────────────────────────
     if (req.method === 'GET') {
       if (!sessionId || !sessions.has(sessionId)) {
-        // No session yet on GET = tool-list discovery by OpenAI.
-        // Create a stateless session just to respond with capabilities.
         const server    = createMcpServer();
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
