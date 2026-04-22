@@ -173,9 +173,9 @@ app.all(MCP_PATH, async (req, res) => {
 
   try {
     // ── API Key Validation ───────────────────────────────────────────────
-    if (!apiKey || !UPSTREAM_API_KEYS.includes(apiKey)) {
-      return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
-    }
+    // if (!apiKey || !UPSTREAM_API_KEYS.includes(apiKey)) {
+    //   return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
+    // }
 
     // ── DELETE: close session ──────────────────────────────────────────────
     if (req.method === 'DELETE') {
