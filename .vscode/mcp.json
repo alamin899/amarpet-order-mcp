@@ -2,10 +2,7 @@
 	"servers": {
 		"amarpet-mcp": {
 			"url": "http://165.232.154.13:3000/mcp",
-			"type": "http",
-			"headers": {
-				"x-api-key": "alamin899"
-			}
+			"type": "http"
 		}
 	}
 }

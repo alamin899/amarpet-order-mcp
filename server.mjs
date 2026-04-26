@@ -6,12 +6,14 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { config } from './src/config.mjs';
 import { createMcpServer } from './src/mcp.mjs';
 import { sessions } from './src/sessions.mjs';
+import { createCode, redeemCode } from './src/oauth.mjs';
 
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Ensure SSE-compatible Accept headers for MCP streaming
 app.use((req, _res, next) => {
@@ -36,11 +38,77 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// ── OAuth 2.0 — required by the MCP spec for HTTP transport ──────────────────
+// The server is PUBLIC. OAuth is transparent: tokens are auto-issued to anyone.
+// No user login, no API key — Cursor/VS Code just gets a token silently.
+
+// RFC 9728 — tells clients which auth server to use (this same server)
+app.get('/.well-known/oauth-protected-resource', (req, res) => {
+  const base = origin(req);
+  res.json({ resource: base, authorization_servers: [base] });
+});
+
+// RFC 8414 — OAuth 2.0 Authorization Server Metadata
+app.get('/.well-known/oauth-authorization-server', (req, res) => {
+  const base = origin(req);
+  res.json({
+    issuer:                               base,
+    authorization_endpoint:              `${base}/oauth/authorize`,
+    token_endpoint:                       `${base}/oauth/token`,
+    registration_endpoint:               `${base}/oauth/register`,   // ← fixes the error
+    response_types_supported:            ['code'],
+    grant_types_supported:               ['authorization_code'],
+    code_challenge_methods_supported:    ['S256'],
+    token_endpoint_auth_methods_supported: ['none'],
+  });
+});
+
+// RFC 7591 — Dynamic Client Registration (Cursor calls this before starting OAuth)
+app.post('/oauth/register', (req, res) => {
+  // Public server: accept any registration, return a working client_id
+  res.status(201).json({
+    client_id:                'mcp-public-client',
+    client_secret_expires_at: 0,
+    redirect_uris:            req.body.redirect_uris ?? [],
+    token_endpoint_auth_method: 'none',
+    grant_types:              ['authorization_code'],
+    response_types:           ['code'],
+  });
+});
+
+// Authorization endpoint — auto-issues a code immediately (no login page, public server)
+app.get('/oauth/authorize', (req, res) => {
+  const { redirect_uri, state, code_challenge } = req.query;
+  if (!redirect_uri || !code_challenge) {
+    return res.status(400).json({ error: 'invalid_request', error_description: 'redirect_uri and code_challenge are required' });
+  }
+  const code = createCode(code_challenge);
+  const url  = new URL(redirect_uri);
+  url.searchParams.set('code', code);
+  if (state) url.searchParams.set('state', state);
+  res.redirect(url.toString());
+});
+
+// Token endpoint — exchanges code + PKCE verifier for a Bearer token
+app.post('/oauth/token', (req, res) => {
+  const { grant_type, code, code_verifier } = req.body;
+  if (grant_type !== 'authorization_code') {
+    return res.status(400).json({ error: 'unsupported_grant_type' });
+  }
+  const token = redeemCode(code, code_verifier);
+  if (!token) {
+    return res.status(400).json({ error: 'invalid_grant', error_description: 'Code is invalid, expired, or PKCE check failed' });
+  }
+  res.json({ access_token: token, token_type: 'Bearer', expires_in: 86400 });
+});
+
+// ── Health check ──────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, sessions: sessions.count() });
 });
+
+// ── MCP endpoint — fully public, no auth check ────────────────────────────────
 
 app.all(config.mcpPath, async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
@@ -96,6 +164,12 @@ async function startSession(req, res) {
   });
   await server.connect(transport);
   await transport.handleRequest(req, res, req.body);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function origin(req) {
+  return `${req.protocol}://${req.get('host')}`;
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
